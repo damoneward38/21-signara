@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SIGNARA — Sign & Validation Studio</title>
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,sans-serif;background:#0c1018;color:#e6edf3;min-height:100vh}
+header{background:#101a2b;border-bottom:1px solid #1c263a;padding:16px 24px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:5}
+.logo{width:36px;height:36px;border-radius:12px;background:linear-gradient(135deg,#8b5cf6,#38bdf8);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px}
+h1{font-size:19px;margin:0;color:#a5b4fc}h1 small{color:#8b93a7;font-size:10px;display:block;letter-spacing:1px}
+.wrap{max-width:1100px;margin:0 auto;padding:24px;display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+@media(max-width:860px){.wrap{grid-template-columns:1fr}}
+.card{background:#0f1626;border:1px solid #1c2a42;border-radius:12px;padding:18px}
+.card h2{margin:0 0 14px;font-size:13px;text-transform:uppercase;letter-spacing:1px;color:#8b93a7;display:flex;justify-content:space-between}
+label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#8b93a7;margin-top:12px}
+input,select,textarea{width:100%;background:#0a101c;border:1px solid #1c2a42;border-radius:8px;color:#e6edf3;padding:8px 12px;font-size:13px;margin-top:4px;font-family:inherit}
+input:focus,select:focus,textarea:focus{outline:none;border-color:#8b5cf6}
+textarea{resize:vertical;min-height:60px}
+button{background:#1b2438;border:1px solid #2a3452;color:#e6edf3;font-weight:600;border-radius:8px;padding:8px 14px;cursor:pointer;font-size:13px;transition:.12s}
+button:hover{background:#263455;border-color:#8b5cf6}
+button.primary{background:linear-gradient(135deg,#8b5cf6,#38bdf8);border-color:#8b5cf6;color:#fff}
+button.primary:hover{filter:brightness(1.12)}
+.fields{border:1px solid #1c2a42;border-radius:10px;padding:12px;margin-top:12px}
+.fields h3{margin:0 0 6px;font-size:11px;color:#8b93a7;text-transform:uppercase;letter-spacing:1px}
+.field-row{display:flex;gap:6px;align-items:center;margin-bottom:6px}
+.field-row input{flex:1;margin:0}
+.field-row select{width:110px;margin:0}
+.field-row .rm{background:none;border:none;color:#8b93a7;cursor:pointer;font-size:16px}
+.field-row .rm:hover{color:#ff8fa3}
+canvas#sigPad{background:#0a101c;border:1px solid #1c2a42;border-radius:8px;width:100%;height:170px;touch-action:none;cursor:crosshair;margin-top:4px}
+.pad-tools{display:flex;gap:8px;margin-top:6px}
+.preview{background:#0d1424;border:1px solid #1c2a42;border-radius:12px;padding:24px;position:relative}
+.preview.document{background:linear-gradient(#0d1424,#0d1424)padding-box,linear-gradient(45deg,#8b5cf6,#38bdf8)border-box;border:1.5px solid transparent}
+.doc-title{text-align:center;color:#a5b4fc;font-size:11px;text-transform:uppercase;letter-spacing:3px;margin-bottom:16px}
+.prow{display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:8px}
+.plabel{font-size:10px;color:#8b93a7;text-transform:uppercase;letter-spacing:.5px}
+.pval{font-size:14px;color:#e6edf3;word-break:break-word;}
+.pval.bad{color:#ff8fa3}.pval.good{color:#4ade80}
+.sig-block{border:1px solid #1c2a42;border-radius:10px;padding:12px;margin-top:12px;background:#0a101c}
+.sig-name{font-family:'Brush Script MT',cursive;font-size:24px;color:#e6edf3;min-height:34px}
+canvas.sig-render{width:100%;height:80px}
+.results{color:#e6edf3;font-size:12px}
+.results div{padding:4px 0;border-bottom:1px solid #141b2c}
+.results .pass{color:#4ade80}.results .fail{color:#ff8fa3}
+#signatureStatus{margin-top:10px}
+.empty{color:#8b93a7;text-align:center;padding:40px;font-size:13px;border:1px dashed #1c2a42;border-radius:10px}
+</style></head>
+<body>
+<header><div class="logo">SG</div><h1>SIGNARA<small>SIGN & VALIDATION STUDIO</small></h1></header>
+<div class="wrap">
+<div class="card">
+<h2>Signature Block Builder</h2>
+<label>Signatory Name</label><input id="name" placeholder="Jane Doe">
+<label>Title / Role</label><input id="role" placeholder="Director of Operations">
+<label>Email</label><input id="email" placeholder="jane.doe@example.com">
+<label>Signature Style</label>
+<select id="sigStyle"><option>Draw Signature</option><option>Type Name</option></select>
+<canvas id="sigPad"></canvas>
+<div class="pad-tools"><button id="clearSigBtn">Clear Pad</button></div>
+<div id="signatureStatus" class="results"></div>
+
+<div class="fields">
+<h3>Validation Fields</h3>
+<div id="fieldList"></div>
+<button id="addFieldBtn" style="width:100%;border-style:dashed;background:none">+ Add Field</button>
+</div>
+<div style="margin-top:14px;display:flex;gap:10px">
+<button class="primary" id="validateBtn">Validate Preview</button>
+<button id="clearAllBtn">Reset</button>
+</div>
+</div>
+
+<div>
+<div class="card">
+<h2>Live Preview Card</h2>
+<div id="previewCard"><div class="empty">Build a signature block on the left.</div></div>
+</div>
+<div class="card">
+<h2>Validation Report</h2>
+<div id="report" class="results"><div>Run validation to see results.</div></div>
+</div>
+</div>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+let fields=[{k:'Full Name',v:'Jane Doe'},{k:'Email',v:'jane.doe@example.com'}];
+let sigDrawn=false;
+let drawing=false,pts=[];
+const pad=$('sigPad'),ctx=pad.getContext('2d');
+function resizePad(){const dpr=devicePixelRatio||1;const W=pad.clientWidth,H=pad.clientHeight;pad.width=W*dpr;pad.height=H*dpr;ctx.scale(dpr,dpr);redrawPad();}
+function redrawPad(){ctx.clearRect(0,0,pad.clientWidth,pad.clientHeight);ctx.strokeStyle='#a5b4fc';ctx.lineWidth=2.4;ctx.lineCap='round';ctx.lineJoin='round';
+  if(!pts.length)return;ctx.beginPath();ctx.moveTo(pts[0][0],pts[0][1]);
+  for(let i=1;i<pts.length;i++){const[mx,my]=pts[i-1],[x,y]=pts[i];ctx.quadraticCurveTo(mx,my,(mx+x)/2,(my+y)/2);}
+  ctx.stroke();}
+function pos(e){const r=pad.getBoundingClientRect();return[e.clientX-r.left,e.clientY-r.top];}
+pad.addEventListener('mousedown',e=>{if($('sigStyle').value!=='Draw Signature')return;drawing=true;pts=[pos(e)];redrawPad();});
+pad.addEventListener('mousemove',e=>{if(!drawing)return;pts.push(pos(e));redrawPad();});
+pad.addEventListener('mouseup',()=>{if(drawing){drawing=false;sigDrawn=pts.length>2;}});
+pad.addEventListener('mouseleave',()=>{if(drawing){drawing=false;sigDrawn=pts.length>2;}});
+pad.addEventListener('touchstart',e=>{e.preventDefault();if($('sigStyle').value!=='Draw Signature')return;drawing=true;const t=e.touches[0];pts=[pos(t)];redrawPad();},{passive:false});
+pad.addEventListener('touchmove',e=>{e.preventDefault();if(drawing){pts.push(pos(e.touches[0]));redrawPad();}},{passive:false});
+pad.addEventListener('touchend',()=>{if(drawing){drawing=false;sigDrawn=pts.length>2;}});
+
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+
+function renderFields(){
+  $('fieldList').innerHTML=fields.map((f,i)=>`<div class="field-row">
+<input class="fk" data-i="${i}" value="${esc(f.k)}" placeholder="Field label">
+<input class="fv" data-i="${i}" value="${esc(f.v)}" placeholder="Value">
+<select class="fr" data-i="${i}">
+<option value="text"${f.rule==='text'?' selected':''}>Text</option>
+<option value="email"${f.rule==='email'?' selected':''}>Email</option>
+<option value="phone"${f.rule==='phone'?' selected':''}>Phone</option>
+<option value="url"${f.rule==='url'?' selected':''}>URL</option>
+<option value="required"${f.rule==='required'?' selected':''}>Required</option>
+</select>
+<button class="rm" data-i="${i}">✕</button>
+</div>`).join('');
+}
+
+function renderPreview(){
+  const name=$('name').value.trim()||'Jane Doe';
+  const role=$('role').value.trim();
+  const email=$('email').value.trim();
+  $('previewCard').innerHTML=`<div class="preview document">
+<div class="doc-title">SIGNED AUTHORIZATION CARD</div>
+<div class="prow"><span class="plabel">Signatory</span><span class="pval">${esc(name)}</span></div>
+<div class="prow"><span class="plabel">Role</span><span class="pval">${esc(role||'—')}</span></div>
+<div class="prow"><span class="plabel">Contact</span><span class="pval">${esc(email||'—')}</span></div>
+${fields.map(f=>`<div class="prow"><span class="plabel">${esc(f.k||'Field')}</span><span class="pval" data-key="${esc(f.k)}">${esc(f.v||'—')}</span></div>`).join('')}
+<div class="sig-block">
+<span class="plabel">Signature</span>
+<div class="sig-name">${$('sigStyle').value==='Type Name'?esc(name):''}</div>
+<canvas class="sig-render" id="sigRender"></canvas>
+</div>
+</div>`;
+  const rc=$('sigRender');
+  if(rc){const dpr=devicePixelRatio||1;rc.width=rc.clientWidth*dpr;rc.height=rc.clientHeight*dpr;const cx=rc.getContext('2d');cx.scale(dpr,dpr);cx.clearRect(0,0,rc.clientWidth,rc.clientHeight);
+    if(pts.length>2){const scale=Math.min(rc.clientWidth/pad.clientWidth,rc.clientHeight/pad.clientHeight,1.2);cx.strokeStyle='#a5b4fc';cx.lineWidth=2;cx.lineCap='round';cx.beginPath();
+    const norm=pts.map(p=>[p[0]*scale,p[1]*scale]);cx.moveTo(norm[0][0],norm[0][1]);
+    for(let i=1;i<norm.length;i++){const[mx,my]=norm[i-1],[x,y]=norm[i];cx.quadraticCurveTo(mx,my,(mx+x)/2,(my+y)/2);}cx.stroke();}
+    else{cx.strokeStyle='#2a3452';cx.beginPath();cx.moveTo(20,60);cx.lineTo(rc.clientWidth-20,60);cx.stroke();}
+  }
+}
+
+function validate(){
+  const report=[];let pass=true;
+  const name=$('name').value.trim();
+  const email=$('email').value.trim();
+  if(!name){report.push('❌ Signatory name is required.');pass=false;}
+  else report.push('✅ Name provided.');
+  const isDraw=$('sigStyle').value==='Draw Signature';
+  if(isDraw&&!sigDrawn){report.push('❌ Signature must be drawn on the pad.');pass=false;}
+  else if(!isDraw&&!name){report.push('❌ Typed signature needs a name.');pass=false;}
+  else if(!isDraw)report.push('✅ Signature typed.');
+  if(!email){report.push('❌ Contact email required.');pass=false;}
+  else if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){report.push('❌ Email format invalid.');pass=false;}
+  else report.push('✅ Email valid.');
+  fields.forEach((f,i)=>{
+    const v=(f.v||'').trim();
+    if(!v){report.push(`❌ "${f.k||'Field'}" is empty.`);pass=false;return;}
+    if(f.rule==='email'&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)){report.push(`❌ "${f.k}" is not a valid email.`);pass=false;return;}
+    if(f.rule==='phone'&&!/^[\d\s+\-()]{7,}$/.test(v)){report.push(`❌ "${f.k}" is not a valid phone.`);pass=false;return;}
+    if(f.rule==='url'&&!/^https?:\/\/\S+/.test(v)){report.push(`❌ "${f.k}" is not a valid URL.`);pass=false;return;}
+    report.push(`✅ "${f.k}" validated (${f.rule==='required'||f.rule==='text'?'text':f.rule}).`);
+  });
+  report.push(pass?'🎉 Signature card is VALID.':'⚠️ Fix the issues above.');
+  $('report').innerHTML=report.map(r=>`<div class="${r.startsWith('❌')?'fail':r.startsWith('🎉')?'pass':r.startsWith('✅')?'pass':''}">${esc(r)}</div>`).join('');
+  return pass;
+}
+
+$('addFieldBtn').onclick=()=>{fields.push({k:'',v:'',rule:'text'});renderFields();};
+$('fieldList').addEventListener('input',e=>{
+  const i=+e.target.dataset.i;if(isNaN(i))return;
+  const f=fields[i];if(e.target.classList.contains('fk'))f.k=e.target.value;
+  if(e.target.classList.contains('fv')){f.v=e.target.value;renderPreview();}
+  if(e.target.classList.contains('fr'))f.rule=e.target.value;
+});
+$('fieldList').onclick=e=>{const b=e.target.closest('.rm');if(b){fields.splice(+b.dataset.i,1);renderFields();renderPreview();}};
+$('validateBtn').onclick=()=>{validate();renderPreview();};
+$('clearSigBtn').onclick=()=>{pts=[];sigDrawn=false;redrawPad();renderPreview();};
+$('clearAllBtn').onclick=()=>{$('name').value='';$('role').value='';$('email').value='';pts=[];sigDrawn=false;renderFields();renderPreview();redrawPad();$('report').innerHTML='<div>Reset.</div>';};
+$('name').addEventListener('input',renderPreview);
+$('role').addEventListener('input',renderPreview);
+$('email').addEventListener('input',renderPreview);
+$('sigStyle').addEventListener('change',renderPreview);
+window.addEventListener('resize',()=>{if(pad.width)resizePad();renderPreview();});
+resizePad();renderFields();renderPreview();
+</script>
+</body></html>
